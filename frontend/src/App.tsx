@@ -10,19 +10,19 @@ function App() {
     const role: "admin" | "user" = location.pathname.startsWith("/admin") ? "admin" : "user"; 
 
 
-useEffect(() => {
-  const deneme = async () => {
-    const response = await axios.get('http://localhost:8080/etkinlikler', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+// useEffect(() => {
+//   const deneme = async () => {
+//     const response = await axios.get('http://localhost:8080/etkinlikler', {
+//       method: 'GET',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//     });
 
-    console.log(response.data, "çalıştı")
-  }
-  deneme();
-}, [])
+//     console.log(response.data, "çalıştı")
+//   }
+//   deneme();
+// }, [])
 
   return (
     <>

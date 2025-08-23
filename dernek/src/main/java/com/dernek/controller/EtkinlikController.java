@@ -1,5 +1,6 @@
 package com.dernek.controller;
 
+import com.dernek.entity.Announcement;
 import com.dernek.entity.Etkinlik;
 import com.dernek.service.EtkinlikService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,13 @@ public class EtkinlikController {
     @Autowired
     private EtkinlikService etkinlikService;
 
-    @GetMapping
-    public List<Etkinlik> getAllEtkinlikler() {
-        return etkinlikService.getAllEtkinlikler();
+@GetMapping
+public List<Etkinlik> getAllEtkinlikler(@RequestParam(required = false) String type) {
+    if (type != null) {
+        return etkinlikService.getEtkinliklerByType(type);
     }
-
+    return etkinlikService.getAllEtkinlikler();
+}
     @GetMapping("/{id}")
     public Optional<Etkinlik> getEtkinlikById(@PathVariable Long id) {
         return etkinlikService.getEtkinlikById(id);
@@ -33,8 +36,10 @@ public class EtkinlikController {
 
     @PostMapping
     public Etkinlik createEtkinlik(@RequestBody Etkinlik etkinlik) {
+        System.out.println("Gelen etkinlik: " + etkinlik);
         return etkinlikService.saveEtkinlik(etkinlik);
     }
+
 
     @PutMapping("/{id}")
     public Etkinlik updateEtkinlik(@PathVariable Long id, @RequestBody Etkinlik etkinlik) {

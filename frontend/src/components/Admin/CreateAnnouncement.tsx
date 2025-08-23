@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 
+
 // Duyuru tipi
 interface Announcement {
+  type: string,
   id: number;
   konu: string;
   icerik: string;
@@ -12,6 +14,7 @@ interface Announcement {
 // Dummy veri
 const initialAnnouncements: Announcement[] = [
   {
+    type: "ANNOUNCEMENT",
     id: 1,
     konu: "Örnek Duyuru",
     icerik: "Bu bir örnek duyuru içeriğidir.",
@@ -31,18 +34,54 @@ const AnnouncementsAdminPanel: React.FC = () => {
   };
 
   // Yeni duyuru ekle
-  const handleCreate = () => {
+  const handleCreate = async (e) => {
+    e.preventDefault();
     if (!formData.konu || !formData.icerik) {
       alert("Lütfen gerekli alanları doldurun.");
       return;
     }
+
+  
     const newAnnouncement: Announcement = {
+      type: "ANNOUNCEMENT",
       id: Date.now(),
       konu: formData.konu!,
       icerik: formData.icerik!,
       resim: formData.resim || "",
       gecerliliktarihi: new Date().toISOString(),
     };
+
+    
+
+
+  const formValues = {
+    type: "ANNOUNCEMENT",
+    konu: formData.konu!,
+    icerik: formData.icerik!,
+    resim: formData.resim || "",
+    gecerliliktarihi: new Date().toISOString(),
+  }
+
+     try {
+    const response = await fetch("http://localhost:8080/etkinlikler", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formValues),
+    });
+
+    if (!response.ok) {
+      throw new Error("Sunucu hatası!");
+    }
+
+    const data = await response.json();
+    console.log("Backend yanıtı:", data);
+  } catch (error) {
+    console.error("Hata:", error);
+  }
+
+    
     setAnnouncements((prev) => [...prev, newAnnouncement]);
     setFormData({});
     alert("Duyuru kaydedildi!");
@@ -77,7 +116,7 @@ const AnnouncementsAdminPanel: React.FC = () => {
       <h1 className="text-2xl font-bold mb-4">Duyuru Yönetim Paneli</h1>
 
       {/* Form */}
-      <div className="border p-4 rounded mb-6 shadow">
+      <form onSubmit={handleCreate} className="border p-4 rounded mb-6 shadow">
         <h2 className="text-xl font-semibold mb-2">{selected ? "Duyuru Güncelle" : "Yeni Duyuru Ekle"}</h2>
         <div className="mb-2">
           <label className="block font-medium">Başlık *</label>
@@ -121,7 +160,7 @@ const AnnouncementsAdminPanel: React.FC = () => {
               Güncelle
             </button>
           ) : (
-            <button onClick={handleCreate} className="bg-green-500 text-white px-4 py-2 rounded">
+            <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">
               Kaydet
             </button>
           )}
@@ -135,7 +174,7 @@ const AnnouncementsAdminPanel: React.FC = () => {
             İptal
           </button>
         </div>
-      </div>
+      </form>
 
       {/* Liste */}
       <div className="border p-4 rounded shadow">

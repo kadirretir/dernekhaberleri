@@ -9,6 +9,7 @@ import CreateAnnouncement from './components/Admin/CreateAnnouncement.tsx'
 import ListNews from './components/User/ListNews.tsx';
 import ListAnnouncements from './components/User/ListAnnouncements.tsx';
 import NotFound from './components/NotFound.tsx';
+import NewsDetail from './components/User/NewsDetail.tsx';
 
 
 
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
         path: "haberler",
         element: <ListNews />,
       },
+      {
+      path: "haberler/:id",
+      element: <NewsDetail />,
+    },
       {
         path: "duyurular",
         element: <ListAnnouncements />,
