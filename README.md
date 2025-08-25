@@ -14,7 +14,6 @@ Bir derneğin web sitesinde **Haberler** ve **Duyurular** içeriklerinin dinamik
 - [Design Pattern Açıklaması](#design-pattern-açıklaması)
 - [Gerçek Zamanlı Duyuru (WebSocket)](#gerçek-zamanlı-duyuru-websocket)
 - [Proje Yapısı](#proje-yapısı)
-- [İletişim](#iletişim)
 
 ---
 
@@ -93,12 +92,21 @@ Bir derneğin web sitesinde **Haberler** ve **Duyurular** içeriklerinin dinamik
    cd frontend
    ```
 
-2. Gerekli paketleri yükleyin:
+2. .env dosyasını oluşturun ve aşağıdaki değeri yazın:
+    ```bash
+    VITE_BACKEND_URL=http://localhost:8080
+   ```
+3. 
+   ```bash
+   cd frontend
+   ```
+
+4. Gerekli paketleri yükleyin:
    ```bash
    npm install
    ```
 
-3. Uygulamayı başlatın:
+5. Uygulamayı başlatın:
    ```bash
    npm run dev
    ```
