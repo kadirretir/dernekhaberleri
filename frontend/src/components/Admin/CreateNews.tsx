@@ -42,7 +42,6 @@ const NewsAdminPanel: React.FC = () => {
           throw new Error("Sunucu hatası!");
         }
         const data = await response.json();
-        console.log(data)
         setNewsList(data);
       } catch (error) {
         console.error("Hata:", error);
@@ -84,7 +83,6 @@ const NewsAdminPanel: React.FC = () => {
 
     const data = await response.json();
     const updatedNews = { ...data, haberLinki: `http://localhost:5173/kullanici/haberler/${data.id}` };
-    console.log("Backend yanıtı:", data);
 
         // 3️⃣ PUT isteği ile haberLinki’yi güncelle
     const updateResponse = await fetch(`http://localhost:8080/etkinlikler/${data.id}`, {
@@ -246,7 +244,7 @@ const NewsAdminPanel: React.FC = () => {
             {newsList.map((news) => (
               <tr key={news.id}>
                 <td className="border px-2 py-1">{news.konu}</td>
-                <td className="border px-2 py-1">{news.gecerliliktarihi}</td>
+                <td className="border px-2 py-1">{new Date(news.gecerliliktarihi).toLocaleDateString()}</td>
                 <td className="border px-2 py-1">
                   <NavLink to={news.haberLinki}  className="text-blue-600 hover:underline">
                     Haberi Gör

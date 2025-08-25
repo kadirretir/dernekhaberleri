@@ -11,6 +11,6 @@ import lombok.Setter;
 public class Announcement extends Etkinlik {
 
     // Resim dosya yolu, frontend için URL oluşturulabilir
-    @Column(length = 500, nullable = false)
+    @Column(length = 500, nullable = true)
     private String resim;
 }

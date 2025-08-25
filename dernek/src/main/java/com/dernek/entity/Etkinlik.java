@@ -28,4 +28,12 @@ public abstract class Etkinlik {
     private String konu;
     private String icerik;
     private String gecerliliktarihi;
+
+    // 🌟 Discriminator alanı ve getter
+    @Column(name = "etkinlik", insertable = false, updatable = false)
+    private String discriminator;
+
+    public String getDiscriminator() {
+        return discriminator;
+    }
 }

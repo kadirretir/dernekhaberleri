@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 
 // Duyuru tipi
 interface Announcement {
@@ -11,32 +11,49 @@ interface Announcement {
   resim: string,
 }
 
-// Dummy veri
-const initialAnnouncements: Announcement[] = [
-  {
-    type: "ANNOUNCEMENT",
-    id: 1,
-    konu: "Örnek Duyuru",
-    icerik: "Bu bir örnek duyuru içeriğidir.",
-    resim: "https://example.com/announcement/1",
-    gecerliliktarihi: new Date().toISOString(),
-  },
-];
 
 const AnnouncementsAdminPanel: React.FC = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [selected, setSelected] = useState<Announcement | null>(null);
   const [formData, setFormData] = useState<Partial<Announcement>>({});
+  const [file, setFile] = useState<File | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  const navigate = useNavigate();
+  
+
+ const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) => {
+  const { name, value, files } = e.target as HTMLInputElement;
+  if (files) {
+    setFile(files[0]);
+  } else {
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  }
+};
+
+   useEffect(() => {
+      const fetchAnnouncements = async () => {
+        try {
+          const response = await fetch("http://localhost:8080/etkinlikler?type=ANNOUNCEMENT");
+          if (!response.ok) {
+            throw new Error("Sunucu hatası!");
+          }
+          const data = await response.json();
+    
+          setAnnouncements(data);
+        } catch (error) {
+          console.error("Duyurular yüklenirken hata oluştu:", error);
+        }
+      }
+  
+      fetchAnnouncements();
+    }, []);
 
   // Yeni duyuru ekle
-  const handleCreate = async (e) => {
+  const handleCreate = async (e:React.FormEvent) => {
     e.preventDefault();
-    if (!formData.konu || !formData.icerik) {
+    if (!formData.konu || !formData.icerik || !file) {
       alert("Lütfen gerekli alanları doldurun.");
       return;
     }
@@ -76,11 +93,22 @@ const AnnouncementsAdminPanel: React.FC = () => {
     }
 
     const data = await response.json();
-    console.log("Backend yanıtı:", data);
+  // 2️⃣ Resim dosyasını upload et
+    const formDataFile = new FormData();
+    formDataFile.append("file", file);
+      formDataFile.append("etkinlikId", data.id);
+
+    const uploadResponse = await fetch("http://localhost:8080/etkinlikler/upload", {
+      method: "POST",
+      body: formDataFile,
+    });
+  const uploadedAnnouncement = await uploadResponse.json();
+     console.log("Kaydedilen duyuru:", uploadedAnnouncement);
   } catch (error) {
     console.error("Hata:", error);
   }
 
+     navigate("/kullanici/duyurular");
     
     setAnnouncements((prev) => [...prev, newAnnouncement]);
     setFormData({});
@@ -88,23 +116,86 @@ const AnnouncementsAdminPanel: React.FC = () => {
   };
 
   // Duyuru güncelle
-  const handleUpdate = () => {
-    if (!selected) return;
+ const handleUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!selected) return;
+  if (!formData.konu || !formData.icerik) {
+    alert("Lütfen gerekli alanları doldurun.");
+    return;
+  }
+
+  try {
+    // 1) JSON verisini güncelle
+    const response = await fetch(`http://localhost:8080/etkinlikler/${selected.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...selected,
+        konu: formData.konu,
+        icerik: formData.icerik,
+        gecerliliktarihi: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) throw new Error("Sunucu hatası!");
+
+    const updatedAnnouncement = await response.json();
+
+    // 2) Resim değiştiyse upload et
+    if (file) {
+      const formDataFile = new FormData();
+      formDataFile.append("file", file);
+      formDataFile.append("etkinlikId", String(updatedAnnouncement.id));
+
+      const uploadResponse = await fetch("http://localhost:8080/etkinlikler/upload", {
+        method: "POST",
+        body: formDataFile,
+      });
+
+      if (!uploadResponse.ok) throw new Error("Resim yükleme hatası!");
+
+      const uploaded = await uploadResponse.json();
+      updatedAnnouncement.resim = uploaded.resim;
+    }
+
+    // 3) State güncelle
     setAnnouncements((prev) =>
-      prev.map((a) => (a.id === selected.id ? { ...a, ...formData, updatedAt: new Date().toISOString() } : a))
+      prev.map((a) => (a.id === updatedAnnouncement.id ? updatedAnnouncement : a))
     );
+
     setSelected(null);
     setFormData({});
+    setFile(null);
     alert("Duyuru güncellendi!");
-  };
+  } catch (error) {
+    console.error("Hata:", error);
+    alert("Duyuru güncellenirken hata oluştu!");
+  }
+};
 
-  // Duyuru sil
-  const handleDelete = (id: number) => {
-    if (window.confirm("Duyuru silinsin mi?")) {
-      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
-      alert("Duyuru silindi!");
+ // Duyuru sil
+const handleDelete = async (id: number) => {
+  if (!window.confirm("Duyuru silinsin mi?")) return;
+
+  try {
+    const response = await fetch(`http://localhost:8080/etkinlikler/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Sunucu hatası!");
     }
-  };
+
+    // Backend’den başarılı yanıt geldiyse local state’i güncelle
+    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    alert("Duyuru silindi!");
+  } catch (error) {
+    console.error("Hata:", error);
+    alert("Duyuru silinirken bir hata oluştu!");
+  }
+};
 
   const handleSelect = (a: Announcement) => {
     setSelected(a);
@@ -147,7 +238,6 @@ const AnnouncementsAdminPanel: React.FC = () => {
   aria-describedby="file_input_help"
   id="file_input" 
   name="resim"
-  value={formData.resim || ""}
   onChange={handleChange}
   type="file" />
 <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">SVG, PNG, JPG or GIF (MAX. 800x400px).</p>
@@ -160,7 +250,7 @@ const AnnouncementsAdminPanel: React.FC = () => {
               Güncelle
             </button>
           ) : (
-            <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">
+            <button type="submit" className="cursor-pointer bg-green-500 text-white px-4 py-2 rounded">
               Kaydet
             </button>
           )}
@@ -169,7 +259,7 @@ const AnnouncementsAdminPanel: React.FC = () => {
               setFormData({});
               setSelected(null);
             }}
-            className="bg-gray-300 px-4 py-2 rounded"
+            className="cursor-pointer bg-gray-300 px-4 py-2 rounded"
           >
             İptal
           </button>
@@ -182,26 +272,35 @@ const AnnouncementsAdminPanel: React.FC = () => {
         <table className="w-full border-collapse border">
           <thead>
             <tr className="bg-gray-200">
-              <th className="border px-2 py-1">Başlık</th>
+              <th className="border px-2 py-1">Konu</th>
               <th className="border px-2 py-1">Geçerlilik Tarihi</th>
+               <th className="border px-2 py-1">Resim</th>
               <th className="border px-2 py-1">İşlemler</th>
             </tr>
           </thead>
           <tbody>
             {announcements.map((a) => (
+           
               <tr key={a.id}>
                 <td className="border px-2 py-1">{a.konu}</td>
-                       <td className="border px-2 py-1">{a.gecerliliktarihi}</td>
+                <td className="border px-2 py-1">{new Date(a.gecerliliktarihi).toLocaleDateString()}</td>
+                  <td className="border px-2 py-1">
+                    <img
+                    className="w-25 h-25 w-full object-cover"
+                    src={`${import.meta.env.VITE_BACKEND_URL}/${a.resim}`} alt={a.konu} />
+                    
+                    </td>
+                
                 <td className="border px-2 py-1 flex gap-2">
                   <button
                     onClick={() => handleSelect(a)}
-                    className="bg-yellow-400 px-2 py-1 rounded"
+                    className="cursor-pointer bg-yellow-400 px-2 py-1 rounded"
                   >
                     Düzenle
                   </button>
                   <button
                     onClick={() => handleDelete(a.id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
+                    className="cursor-pointer bg-red-500 text-white px-2 py-1 rounded"
                   >
                     Sil
                   </button>

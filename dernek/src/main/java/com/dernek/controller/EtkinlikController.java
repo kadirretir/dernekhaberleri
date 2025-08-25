@@ -53,14 +53,26 @@ public Etkinlik uploadFile(
     @RequestParam("etkinlikId") Long etkinlikId
 ) throws IOException {
     String fileName = file.getOriginalFilename();
-    Path path = Paths.get("uploads/" + fileName);
+    Path uploadDir = Paths.get("uploads");
+
+    // Eğer klasör yoksa oluştur
+    if (!Files.exists(uploadDir)) {
+        Files.createDirectories(uploadDir);
+    }
+
+    Path path = uploadDir.resolve(fileName);
     Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
     Optional<Etkinlik> etkinlikOpt = etkinlikService.getEtkinlikById(etkinlikId);
     if (etkinlikOpt.isPresent()) {
         Etkinlik etkinlik = etkinlikOpt.get();
-        etkinlik.setImagePath(path.toString()); // Etkinlik entity'de imagePath alanı olmalı
-        return etkinlikService.saveEtkinlik(etkinlik);
+
+        // Sadece Announcement için resim set et
+        if (etkinlik instanceof Announcement announcement) {
+            announcement.setResim(path.toString());
+            return etkinlikService.saveEtkinlik(announcement);
+        }
+        throw new RuntimeException("Sadece Announcement için resim yüklenebilir.");
     }
     throw new RuntimeException("Etkinlik bulunamadı");
 }
